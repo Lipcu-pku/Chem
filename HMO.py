@@ -218,7 +218,7 @@ class Huckel:
         if atom_2 not in self.atoms:
             raise ValueError(f'Atom {atom_2} is not in the structure')
         if atom_2 not in self.structure[atom_1]:
-            # 未成键
+            # Not-connected atoms
             return 0
         return sum(
             self.electrons[j] * self.orbitals[j][atom_1 - 1] * self.orbitals[j][atom_2 - 1] 
