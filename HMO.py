@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.linalg import null_space
 from sympy import symbols, Matrix, eye, roots, sqrt
-from sympy.polys.polytools import PurePoly, Poly
-from sympy.matrices.dense import MutableDenseMatrix
 from functools import cached_property
 
 class Huckel:
@@ -85,8 +83,8 @@ class Huckel:
         :return: dict[energy, multiplicity], sorted by increasing energy
         """
         A = self.hamiltonian
-        p: PurePoly = A.charpoly()
-        det_A: Poly = p.as_poly().subs(p.gens[0], 0)
+        p = A.charpoly()
+        det_A = p.as_poly().subs(p.gens[0], 0)
         r: dict = roots(det_A)
         return {
             k: r[k] 
@@ -119,9 +117,7 @@ class Huckel:
                 D: Matrix = self.hamiltonian.subs(symbols('x'), x)
                 _null_space = D.nullspace()
                 for i in range(g):
-                    c: MutableDenseMatrix = _null_space[i]
-                    c: MutableDenseMatrix = c.normalized()
-                    c: list = c.tolist()
+                    c = _null_space[i].normalized().tolist()
                     c = [c[j][0] for j in range(self.n)]
                     ret.append(c)
             else:
