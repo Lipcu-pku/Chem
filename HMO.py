@@ -85,12 +85,13 @@ class Huckel:
         A = self.hamiltonian
         p = A.charpoly()
         det_A = p.as_poly().subs(p.gens[0], 0)
-        r: dict = roots(det_A)
+        _r: dict = roots(det_A)
+        if self.n > 20:
+            r = { k.evalf(chop=True): _r[k]  for k in _r }
+        else:
+            r = _r
         return {
             k: r[k] 
-            for k in sorted(r.keys())
-        } if self.n < 20 else {
-            k.evalf(): r[k]
             for k in sorted(r.keys())
         }
     
@@ -254,34 +255,48 @@ class Huckel:
             self.free_valance(atom) 
             for atom in self.atoms
             ]
+    
+    def plot_energy(self):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(5, 6))
+        color = 'black'
+        line_length = 0.3
+        elec_index = 0
+        for i, (energy, g) in enumerate(self.energy.items()):
+            spacing = 0.5
+            for j in range(g):
+                x_start = -line_length/2 + (j-(g-1)/2)*spacing
+                x_end = x_start + line_length
+                ax.hlines(energy.evalf(chop=True), x_start, x_end, color=color, linewidth=line_length)
+                elec_pos = x_start + line_length/2
+                elec_num = self.electrons[elec_index]
+                if elec_num == 1:
+                    ax.text(elec_pos-0.06, energy, '↑', fontsize=12, verticalalignment='center')
+                elif elec_num == 2:
+                    ax.text(elec_pos-0.08, energy, '↑', fontsize=12, verticalalignment='center')
+                    ax.text(elec_pos-0.02, energy, '↓', fontsize=12, verticalalignment='center')
+                elec_index += 1
+
+        ax.set_ylabel("Energy")
+        ax.set_xlim(-2, 2)
+        ax.axhline(0, color='lightgray', linestyle='--', linewidth=1)
+        ax.grid(False)
+        ax.set_xticks([])
+        ax.spines[['right', 'top']].set_visible(False)
+
+        plt.tight_layout()
+        plt.show()
 
 if __name__ == "__main__":
-    
-    # Example usage
-    # Structure of trimethylenemethane (TMM)
+
     structure = {
-        1: [2, 3, 4], 
-        2: [1], 
-        3: [1], 
-        4: [1]
+        1: [2], 
+        2: [1, 3], 
+        3: [2, 4], 
+        4: [3]
     }
-
     h = Huckel(structure)
-
-    print(h.hamiltonian)
-    # Matrix([[x, 1, 1, 1], [1, x, 0, 0], [1, 0, x, 0], [1, 0, 0, x]])
-    
-    print(h.energy)
-    # {-sqrt(3): 1, 0: 2, sqrt(3): 1}
-
-    print(h.orbitals)
-    # [[sqrt(2)/2, sqrt(6)/6, sqrt(6)/6, sqrt(6)/6], [0, -sqrt(2)/2, sqrt(2)/2, 0], [0, -sqrt(2)/2, 0, sqrt(2)/2], [-sqrt(2)/2, sqrt(6)/6, sqrt(6)/6, sqrt(6)/6]]
-
-    print(h.electrons)
-    # [2, 1, 1, 0]
-
     print(h.bond_orders)
-    # {(1, 2): sqrt(3)/3, (1, 3): sqrt(3)/3, (1, 4): sqrt(3)/3}
-
-    print(h.free_valances)
-    # [0, 2*sqrt(3)/3, 2*sqrt(3)/3, 2*sqrt(3)/3]
+    print(h.electron_density)
+    print([v.evalf(4) for v in h.electron_density])
+    h.plot_energy()
