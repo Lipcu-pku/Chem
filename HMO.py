@@ -75,6 +75,13 @@ class Huckel:
         A: Matrix = x * eye(self.n) + B
         return A
 
+   @cached_property
+    def det_hamiltonian(self):
+        A = self.hamiltonian
+        p = A.charpoly()
+        det_A = p.as_poly().subs(p.gens[0], 0)
+        return det_A
+
     @cached_property
     def energy(self) -> dict:
         """
@@ -82,10 +89,20 @@ class Huckel:
         return values are the x, which represents the energy in the from of α-βx, where α is the Coulomb integral and β is the resonance integral.
         :return: dict[energy, multiplicity], sorted by increasing energy
         """
-        A = self.hamiltonian
-        p = A.charpoly()
-        det_A = p.as_poly().subs(p.gens[0], 0)
-        _r: dict = roots(det_A)
+        det_A = self.det_hamiltonian
+        try: 
+            _r: dict = roots(det_A)
+            assert sum(_r.values()) == self.n
+            # The sum of the multiplicity is not equal to the number of atoms, otherwise use nroots. 
+        except AssertionError:
+            _r: list = nroots(det_A, maxsteps=500)
+            _rr = []
+            for z in _r:
+                if abs(z.as_real_imag()[1]) < 1e-9:
+                    _rr.append(z.as_real_imag()[0])
+            _r = {x: _rr.count(x) for x in _rr}
+            assert sum(_r) == self.n, "For certain reason the number of roots is not equal to the number of atoms"
+        
         if self.n > 20:
             r = { k.evalf(chop=True): _r[k]  for k in _r }
         else:
@@ -288,7 +305,6 @@ class Huckel:
         plt.show()
 
 if __name__ == "__main__":
-
     structure = {
         1: [2], 
         2: [1, 3], 
